@@ -1,0 +1,268 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comparison Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        p {
+            color: #333;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            white-space: pre-line;
+            font-family: monospace;
+        }
+
+        .highlight {
+            background-color: yellow; /* Change to any desired highlight color */
+        }
+    </style>
+</head>
+<body>
+    @using Newtonsoft.Json
+    @using Newtonsoft.Json.Linq
+    @using System.Collections.Generic
+    @{
+        Layout = "~/Views/Shared/_Layout.cshtml";
+        ViewData["Title"] = "JSON Comparison Result";
+        List<string> differences = ViewBag.Differences;
+        string json1 = ViewBag.Json1;
+        string json2 = ViewBag.Json2;
+    }
+
+    <div class="container">
+        <h1 class="mt-4">JSON Comparison Result</h1>
+
+        @if (ViewBag.Result != null)
+        {
+            <div class="alert alert-info" role="alert">
+                @ViewBag.Result
+            </div>
+        }
+
+        @if (differences != null && differences.Count > 0)
+        {
+            <h2 class="mt-4">Differences:</h2>
+            <ul class="list-group">
+                @foreach (var difference in differences)
+                {
+                    <li class="list-group-item">@Html.Raw(difference)</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <h2 class="mt-4"><strong>JSONs are matched. No differences found.</strong></h2>
+        }
+
+        <div class="row">
+            <div class="col">
+                <h2>JSON 1:</h2>
+                <div id="json1" class="card">@Html.Raw(JsonConvert.SerializeObject(JsonConvert.DeserializeObject(json1), Formatting.Indented))</div>
+            </div>
+            <div class="col">
+                <h2>JSON 2:</h2>
+                <div id="json2" class="card">@Html.Raw(JsonConvert.SerializeObject(JsonConvert.DeserializeObject(json2), Formatting.Indented))</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Function to highlight the differing properties and complex objects
+        function highlightDifferences() {
+            var differences = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(differences));
+
+            for (var i = 0; i < differences.length; i++) {
+                var path = differences[i];
+                var parts = path.split('.');
+                var obj1 = JSON.parse($('#json1').text());
+                var obj2 = JSON.parse($('#json2').text());
+
+                var target1 = findTarget(obj1, parts);
+                var target2 = findTarget(obj2, parts);
+
+                if (target1) {
+                    // Highlight the target property and its value in JSON 1
+                    highlightProperty($('#json1'), target1);
+                }
+
+                if (target2) {
+                    // Highlight the target property and its value in JSON 2
+                    highlightProperty($('#json2'), target2);
+                }
+
+                // Highlight the name of the object if it's present in one JSON but not in the other
+
+                if (target1 && target2) {
+                    highlightObject($('#json1'), parts);
+                    highlightObject($('#json2'), parts);
+                }
+
+                if (!target1 && target2) {
+                    highlightObject($('#json2'), parts);
+                }
+
+                if (target1 && !target2) {
+                    highlightObject($('#json1'), parts);
+                }
+
+                // Highlight simple array elements
+                if (target1 && target1.key.includes('[')) {
+                    highlightSimpleArrayElement($('#json1'), target1);
+                }
+
+                if (target2 && target2.key.includes('[')) {
+                    highlightSimpleArrayElement($('#json2'), target2);
+                }
+            }
+        }
+
+        // Function to traverse the JSON DOM and find the target property
+        function findTarget(obj, parts) {
+            var current = obj;
+
+            for (var j = 0; j < parts.length; j++) {
+                var part = parts[j];
+                var index = part.indexOf('[');
+
+                if (index !== -1) {
+                    var propName = part.substring(0, index);
+                    var idx = parseInt(part.substring(index + 1, part.length - 1));
+                    current = current[propName][idx];
+                } else {
+                    current = current[part];
+                }
+
+                if (!current) {
+                    return null;
+                }
+            }
+
+            return { key: parts[parts.length - 1], value: current };
+        }
+
+        // Function to highlight the specified property and its value
+        function highlightProperty($json, target) {
+            var jsonString = JSON.stringify(target.value, null, 2);
+            var propertyName = '"' + target.key + '":';
+            var propertyRegex = new RegExp('(\\s*' + propertyName + '\\s*' + jsonString + '\\s*,|\\s*' + propertyName + '\\s*' + jsonString + '\\s*\\n|\\s*' + propertyName + '\\s*' + jsonString + '\\s*\\}|\\s*' + propertyName + '\\s*' + jsonString + '\\s*$)', 'g');
+            $json.html($json.html().replace(propertyRegex, '<span class="highlight">$1</span>'));
+        }
+
+        // Function to highlight the name of the object if it's present in one JSON but not in the other
+        function highlightObject($json, parts) {
+            var lastPart = parts[parts.length - 1];
+            var objPath = lastPart.split('[')[0]; // Get the object name without array index
+            var isObject = !lastPart.includes('['); // Check if the last part is an object
+            if (isObject) {
+                // Highlight the object name
+                $json.html($json.html().replace(lastPart, '<span class="highlight">' + lastPart + '</span>'));
+            } else {
+                var startIndex = $json.html().indexOf(lastPart);
+                var endIndex = startIndex + lastPart.length - 1;
+                var jsonString = $json.html().substring(startIndex, endIndex + 1);
+                var complexObjectRegex = new RegExp('\\{[\\s\\S]*?\\}', 'g'); // Updated regex to match multiline objects
+                var matches = jsonString.match(complexObjectRegex);
+                if (matches) {
+                    matches.forEach(function (match) {
+                        $json.html($json.html().replace(match, '<span class="highlight">' + match + '</span>'));
+                    });
+                }
+            }
+        }
+
+        function highlightSimpleArrayElement($json, target) {
+            var arrayName = target.key.split('[')[0];
+            var index = parseInt(target.key.match(/\[(\d+)\]/)[1]);
+
+            // Extract JSON string from the .card element using regex
+            var jsonString = $json.text().match(/{[\s\S]*}/)[0];
+
+            try {
+                // Parse the extracted JSON string
+                var jsonObject = JSON.parse(jsonString);
+
+                // Check if the array exists in the JSON object
+                if (jsonObject.rootObject.hasOwnProperty(arrayName)) {
+                    // Access the array by its name
+                    var arrayElements = jsonObject.rootObject[arrayName];
+
+                    console.log("Searching for array element:", arrayName + '[' + index + ']');
+                    console.log("Array:", arrayElements);
+
+                    if (arrayElements && arrayElements.length > index) {
+                        // Construct regex pattern to search for the array element
+                        var regexPattern = '\\b' + arrayElements[index] + '\\b';
+                        var regex = new RegExp(regexPattern, 'g');
+
+                        // Search within the substring corresponding to the array
+                        var arraySubstring = JSON.stringify(arrayElements);
+
+                        // Calculate the position of the matched element within the JSON string
+                        var position = arraySubstring.indexOf(arrayElements[index]);
+
+                        // Calculate the line number of the matched element
+                        var lineNumber = 1;
+                        var subString = arraySubstring.substring(0, position);
+                        for (var i = 0; i < subString.length; i++) {
+                            if (subString[i] === '\n') {
+                                lineNumber++;
+                            }
+                        }
+
+                        // Log the line number of the matched element
+                        console.log("Line number:", lineNumber);
+
+                        // Wrap the array element in a <span> tag with the highlight class
+                        var highlightedContent = $json.html().replace(regex, '<span class="highlight">$&</span>');
+
+                        // Update the HTML content with the highlighted array element
+                        $json.html(highlightedContent);
+                    } else {
+                        console.log("Array element not found:", target.key);
+                    }
+                } else {
+                    console.log("Array not found:", arrayName);
+                }
+            } catch (error) {
+                // Handle JSON parsing error
+                console.error("Error parsing JSON:", error);
+            }
+        }
+
+
+        // Call the highlightDifferences function when the document is ready
+        $(document).ready(function () {
+            highlightDifferences();
+        });
+    </script>
+
+</body>
+</html>

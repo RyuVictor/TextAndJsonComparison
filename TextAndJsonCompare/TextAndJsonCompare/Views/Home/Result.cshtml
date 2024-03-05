@@ -1,0 +1,132 @@
+﻿@{
+    string[] lines1 = ViewBag.Lines1;
+    string[] lines2 = ViewBag.Lines2;
+    List<int> differentLineNumbers = ViewBag.DifferentLineNumbers;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comparison Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        p {
+            color: #333;
+        }
+
+        .text-area {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: blue;
+            border-radius: 5px;
+            padding: 2px 5px;
+        }
+
+        .extra {
+            color: green;
+            border-radius: 5px;
+            padding: 2px 5px;
+        }
+
+        .code-line {
+            padding: 5px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ccc;
+        }
+
+            .code-line:nth-child(odd) {
+                background-color: #e9e9e9;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Comparison Result</h2>
+
+        @if (differentLineNumbers.Count > 0)
+        {
+            <p>Dissimilar lines found at line numbers: @string.Join(", ", differentLineNumbers)</p>
+        }
+        else
+        {
+            <p>No differences found. The texts are identical.</p>
+        }
+
+        <div class="text-area">
+            <label>Text Area 1:</label>
+            <br />
+            @for (int i = 0; i < lines1.Length; i++)
+            {
+                var line = lines1[i];
+                <div class="code-line">
+                    @if (differentLineNumbers.Contains(i + 1))
+                    {
+                        <span class="highlight">@line</span>
+                    }
+                    else if (i >= lines2.Length)
+                    {
+                        <span class="extra">@line</span>
+                    }
+                    else
+                    {
+                        <span>@line</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="text-area">
+            <label>Text Area 2:</label>
+            <br />
+            @for (int i = 0; i < lines2.Length; i++)
+            {
+                var line = lines2[i];
+                <div class="code-line">
+                    @if (differentLineNumbers.Contains(i + 1))
+                    {
+                        <span class="highlight">@line</span>
+                    }
+                    else if (i >= lines1.Length)
+                    {
+                        <span class="extra">@line</span>
+                    }
+                    else
+                    {
+                        <span>@line</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <a asp-action="Index">Go Back</a>
+    </div>
+</body>
+</html>

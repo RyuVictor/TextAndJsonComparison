@@ -1,0 +1,145 @@
+﻿@{
+    ViewData["Title"] = "JSON Comparison";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+            input[type="submit"]:hover {
+                background-color: #45a049;
+            }
+
+        .error-message {
+            color: red;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<h1>JSON Comparison</h1>
+
+<form asp-controller="JsonCompare" asp-action="Compare" method="post" enctype="multipart/form-data">
+    <label>JSON Input 1:</label>
+    <div>
+        <input type="radio" name="inputType1" id="text1" value="text" checked="checked" onchange="switchInput('jsonInput1', 'fileInput1')"> Text
+        <input type="radio" name="inputType1" id="file1" value="file" onchange="switchInput('fileInput1', 'jsonInput1')"> File
+    </div>
+    <br />
+    <div id="jsonInput1">
+        <textarea name="text1" rows="5" cols="50"></textarea>
+    </div>
+    <div id="fileInput1" style="display:none;">
+        <input type="file" name="file1" />
+    </div>
+    <div class="error-message" id="jsonError1" style="display:none;">Invalid JSON format. Please enter valid JSON.</div>
+    <br /><br />
+
+    <label>JSON Input 2:</label>
+    <div>
+        <input type="radio" name="inputType2" id="text2" value="text" checked="checked" onchange="switchInput('jsonInput2', 'fileInput2')"> Text
+        <input type="radio" name="inputType2" id="file2" value="file" onchange="switchInput('fileInput2', 'jsonInput2')"> File
+    </div>
+    <br />
+    <div id="jsonInput2">
+        <textarea name="text2" rows="5" cols="50"></textarea>
+    </div>
+    <div id="fileInput2" style="display:none;">
+        <input type="file" name="file2" />
+    </div>
+    <div class="error-message" id="jsonError2" style="display:none;">Invalid JSON format. Please enter valid JSON.</div>
+    <br /><br />
+
+    <input type="submit" value="Compare" onclick="return validateJsonInputs()" />
+</form>
+
+<script>
+    function switchInput(textId, fileId) {
+        var textInput = document.getElementById(textId);
+        var fileInput = document.getElementById(fileId);
+        textInput.style.display = "block";
+        fileInput.style.display = "none";
+    }
+
+    function isValidJson(input) {
+        try {
+            JSON.parse(input);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function validateJsonInputs() {
+        var text1 = document.getElementsByName("text1")[0].value;
+        var text2 = document.getElementsByName("text2")[0].value;
+        var inputType1 = document.getElementsByName("inputType1");
+        var inputType2 = document.getElementsByName("inputType2");
+        var jsonError1 = document.getElementById("jsonError1");
+        var jsonError2 = document.getElementById("jsonError2");
+
+        if (inputType1[0].checked && !isValidJson(text1)) {
+            jsonError1.style.display = "block";
+            return false;
+        } else {
+            jsonError1.style.display = "none";
+        }
+
+        if (inputType2[0].checked && !isValidJson(text2)) {
+            jsonError2.style.display = "block";
+            return false;
+        } else {
+            jsonError2.style.display = "none";
+        }
+
+        return true;
+    }
+</script>
